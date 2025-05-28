@@ -1,14 +1,15 @@
-java
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 public class LoginPage extends JFrame {
+
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JButton loginButton;
-    private JButton registerButton;
     private JLabel messageLabel;
     private UserManager userManager;
 
@@ -20,55 +21,33 @@ public class LoginPage extends JFrame {
 
     private void initializeUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(350, 220);
+        setSize(350, 200);
         setLocationRelativeTo(null);
-        setResizable(false);
+        setLayout(new BorderLayout());
 
-        JPanel panel = new JPanel();
-        panel.setLayout(null);
-
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         JLabel userLabel = new JLabel("Username:");
-        userLabel.setBounds(30, 30, 80, 25);
-        panel.add(userLabel);
-
-        usernameField = new JTextField(20);
-        usernameField.setBounds(120, 30, 180, 25);
-        panel.add(usernameField);
-
         JLabel passLabel = new JLabel("Password:");
-        passLabel.setBounds(30, 70, 80, 25);
-        panel.add(passLabel);
-
-        passwordField = new JPasswordField(20);
-        passwordField.setBounds(120, 70, 180, 25);
-        panel.add(passwordField);
-
+        usernameField = new JTextField();
+        passwordField = new JPasswordField();
         loginButton = new JButton("Login");
-        loginButton.setBounds(30, 120, 120, 30);
-        panel.add(loginButton);
+        messageLabel = new JLabel("", SwingConstants.CENTER);
 
-        registerButton = new JButton("Register");
-        registerButton.setBounds(180, 120, 120, 30);
-        panel.add(registerButton);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
+        formPanel.add(userLabel);
+        formPanel.add(usernameField);
+        formPanel.add(passLabel);
+        formPanel.add(passwordField);
+        formPanel.add(new JLabel());
+        formPanel.add(loginButton);
 
-        messageLabel = new JLabel("");
-        messageLabel.setBounds(30, 160, 270, 25);
-        messageLabel.setForeground(Color.RED);
-        panel.add(messageLabel);
-
-        add(panel);
+        add(formPanel, BorderLayout.CENTER);
+        add(messageLabel, BorderLayout.SOUTH);
 
         loginButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 handleLogin();
-            }
-        });
-
-        registerButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleRegister();
             }
         });
     }
@@ -78,25 +57,43 @@ public class LoginPage extends JFrame {
         String password = new String(passwordField.getPassword());
 
         if (userManager.authenticate(username, password)) {
-            messageLabel.setForeground(new Color(0, 128, 0));
-            messageLabel.setText("Login successful!");
+            showUsersTable();
         } else {
             messageLabel.setForeground(Color.RED);
             messageLabel.setText("Invalid username or password.");
         }
     }
 
-    private void handleRegister() {
-        String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword());
+    private void showUsersTable() {
+        List<UserManager.User> users = userManager.getAllUsers();
 
-        if (userManager.registerUser(username, password)) {
-            messageLabel.setForeground(new Color(0, 128, 0));
-            messageLabel.setText("Registration successful! You can now log in.");
-        } else {
-            messageLabel.setForeground(Color.RED);
-            messageLabel.setText("Registration failed. User may already exist or fields are empty.");
+        String[] columnNames = {"Username", "Password"};
+        Object[][] data = new Object[users.size()][2];
+        for (int i = 0; i < users.size(); i++) {
+            data[i][0] = users.get(i).getUsername();
+            data[i][1] = users.get(i).getPassword();
         }
+
+        JTable table = new JTable(new DefaultTableModel(data, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        JFrame tableFrame = new JFrame("All Users");
+        tableFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        tableFrame.setSize(400, 300);
+        tableFrame.setLocationRelativeTo(this);
+        tableFrame.add(scrollPane, BorderLayout.CENTER);
+
+        JLabel infoLabel = new JLabel("Decrypted users and passwords", SwingConstants.CENTER);
+        infoLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        tableFrame.add(infoLabel, BorderLayout.NORTH);
+
+        tableFrame.setVisible(true);
+        this.dispose();
     }
 
     public static void main(String[] args) {
